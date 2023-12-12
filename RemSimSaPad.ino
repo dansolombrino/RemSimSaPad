@@ -559,6 +559,10 @@ void loop() {
 
 // --- ### --- //
 
+
+// --- BEGIN Game implementations --- //
+
+
 /**
  * Actual implementation of the game_player_seqs_match method
  * 
@@ -659,3 +663,11 @@ void handle_game_result() {
     );
   }
 }
+
+// --- END Game implementations --- //
+
+
+// --- ### --- //
+
+
+// END of file
