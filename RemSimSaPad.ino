@@ -116,16 +116,16 @@ int LEDs[] = {LED_RED, LED_BLUE, LED_GREEN, LED_YELLOW};
  * turning LEDs on or off
  * */
 void setup_LEDs_board_pins() {
-  // Red LED
+  /* Red LED */
   pinMode(LED_RED, OUTPUT);
 
-  // Blue LED
+  /* Blue LED */
   pinMode(LED_BLUE, OUTPUT);
 
-  // Yellow LED
+  /* Yellow LED */
   pinMode(LED_YELLOW, OUTPUT);
 
-  // Green LED
+  /* Green LED */
   pinMode(LED_GREEN, OUTPUT);
 }
 
@@ -157,9 +157,7 @@ void generate_rand_LED_sequence() {
   }
 }
 
-/**
- * Plays a randomly-generated LED sequence
-*/
+/* Plays a randomly-generated LED sequence */
 int play_LED_sequence() {
 
   generate_rand_LED_sequence(); 
