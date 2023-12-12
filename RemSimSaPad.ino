@@ -614,26 +614,41 @@ void communicate_game_result(
   int led_to_blink, int blink_delay_ms
 ) {
 
+  /* Print game result to Serial interface for debug purposes */
   Serial.println(RESULT_TOP_MSG + RESULT_BOTTOM_MSG);
 
+  /* Print game result to LCD to inform player about game result */
   print_msg_LCD(RESULT_TOP_MSG, RESULT_BOTTOM_MSG);
 
+  /* Blink appropriate LED to inform player about game result */
   for (int i = 0; i < GAME_RESULT_NUM_LED_BLINKS; i++) {
+
+    /* Blink the LED */
     blink_LED(led_to_blink, blink_delay_ms);
 
+    /* Wait a little bit to create a continuous blink effect */
     delay(blink_delay_ms);
 
+    /* If any bytton of the infrared remote controller is pressed */
     if (IrReceiver.decode()) {
+
+      /* If the pressed button is the power on/off button */
       if (get_ir_remote_button_value() == KEY_POWER) {
+
+        /* Then reset the game*/
         reset_game();
       }
     }
 
+    /* If the Joystick button is pressed */
     if (!digitalRead(JOYSTICK_BUTTON)) {
+
+      /* Then reset the game*/
       reset_game();
     }
   }
 
+  /* After GAME_RESULT_NUM_LED_BLINKS LED blinks, automatically reset the game */
   reset_game();
 }
 
