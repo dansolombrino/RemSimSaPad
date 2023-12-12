@@ -30,7 +30,39 @@
 
 
 
+// --- BEGIN game constants --- //
+
+
+// How many elements should the player memorize
+# define SEQ_LEN 3
+
+// Stores the random sequence of LEDs that the player is supposed to memorize
+// In the LEDs array defined before, each element of the array stores the Arduino PWM pin
+// responsible for lighting the LED up
+// So, by randomly putting indexes of that LEDs array in this array, we are effectively
+// creating a random sequence of the LEDs
+// Looping over this array and using it to index the LEDs array, we can then actually 
+// light the random sequence
+int rand_LED_seq_idx[SEQ_LEN];
+
+// The delay between one LED of the sequence and the following one
+# define LED_SEQ_DELAY_MS 1000
+
+// Stores player's sequence of LEDs
+int player_LED_seq[SEQ_LEN];
+
+// Indexes player's sequence of LEDs
+int player_LED_seq_idx = 0;
+
+
+// --- END game constants --- //
+
+
+// --- ### --- //
+
+
 // --- BEGIN Joystick definitions --- //
+
 
 // Joystick X axis data is read through Arduino board Analog A0 pin
 #define JOYSTICK_X A0
@@ -41,6 +73,7 @@
 // Joystick press data is read through Arduino board Analog A2 pin
 #define JOYSTICK_BUTTON A2
 
+
 // --- END Joystick definitions --- //
 
 
@@ -48,6 +81,7 @@
 
 
 // --- BEGIN LEDs definitions --- //
+
 
 // Red LED is on Arduino board PWM pin 3
 #define LED_RED 3
@@ -86,6 +120,52 @@ void setup_LEDs_board_pins() {
   // Green LED
   pinMode(LED_GREEN, OUTPUT);
 }
+
+// Generates random LED sequence
+void generate_rand_LED_sequence() {
+  // Seed the random number generator with an analog pin value
+  randomSeed(analogRead(A0));
+
+  Serial.println("Random LEDs");
+
+  // LEDs are stored in the LEDs array
+  // So, if we generate a random sequence of numbers going from 0 to (NUM_LEDS - 1)
+  // we can use these numbers to randomly index the LEDs array
+  // effectively creating a random sequence of LEDs
+  for (int i = 0; i < SEQ_LEN; i++) {
+    rand_LED_seq_idx[i] = random(NUM_LEDS);
+
+    Serial.println(rand_LED_seq_idx[i]);
+  }
+}
+
+int play_LED_sequence() {
+
+  generate_rand_LED_sequence(); 
+
+  // Light the random LED sequence up
+  for (int i = 0; i < SEQ_LEN; i++) {
+
+    blink_LED(LEDs[rand_LED_seq_idx[i]], LED_SEQ_DELAY_MS);
+
+    delay(LED_SEQ_DELAY_MS);
+  } 
+
+}
+
+void blink_LED(int LED_board_pin, int blink_time) {
+  digitalWrite(LED_board_pin, true);
+
+  delay(blink_time);
+
+  digitalWrite(LED_board_pin, false);
+}
+
+void store_player_LED_choice(int player_LED_choice) {
+  player_LED_seq[player_LED_seq_idx] = player_LED_choice;
+  player_LED_seq_idx++;
+}
+
 
 // --- END LEDs definitions --- //
 
@@ -165,87 +245,11 @@ LiquidCrystal lcd(RS, E, D4, D5, D6, D7);
 // --- ### --- //
 
 
-// --- BEGIN game constants --- //
-
-// How many elements should the player memorize
-# define SEQ_LEN 3
-
-// Stores the random sequence of LEDs that the player is supposed to memorize
-// In the LEDs array defined before, each element of the array stores the Arduino PWM pin
-// responsible for lighting the LED up
-// So, by randomly putting indexes of that LEDs array in this array, we are effectively
-// creating a random sequence of the LEDs
-// Looping over this array and using it to index the LEDs array, we can then actually 
-// light the random sequence
-int random_LED_seq[SEQ_LEN];
-
-// The delay between one LED of the sequence and the following one
-# define LED_SEQ_DELAY_MS 1000
-
-// Stores player's sequence of LEDs
-int player_LED_seq[SEQ_LEN];
-
-// Indexes player's sequence of LEDs
-int player_LED_seq_idx = 0;
-
-// --- END game constants --- //
-
-
-// --- ### --- //
-
-
 // Setup method for the LCD screen
 void setup_LCD() {
   
   analogWrite(V0, LCD_CONTRAST);
   lcd.begin(16, 2);
-}
-
-void generate_random_LED_sequence() {
-  // Seed the random number generator with an analog pin value
-  randomSeed(analogRead(A0));
-
-  Serial.println("Random LEDs");
-
-  // Generate random indices
-  for (int i = 0; i < SEQ_LEN; i++) {
-    random_LED_seq[i] = random(NUM_LEDS);
-
-    Serial.println(random_LED_seq[i]);
-  }
-}
-
-int play_LED_sequence() {
-
-  generate_random_LED_sequence();  
-
-  delay(LED_SEQ_DELAY_MS);
-
-  // Light the random LED sequence up
-  for (int i = 0; i < SEQ_LEN; i++) {
-    
-    digitalWrite(LEDs[random_LED_seq[i]], 1);
-    
-    delay(LED_SEQ_DELAY_MS);
-
-    digitalWrite(LEDs[random_LED_seq[i]], 0);
-
-    delay(LED_SEQ_DELAY_MS);
-  } 
-
-}
-
-void blink_LED(int LED_board_pin, int blink_time) {
-  digitalWrite(LED_board_pin, true);
-
-  delay(blink_time);
-
-  digitalWrite(LED_board_pin, false);
-}
-
-void store_player_LED_choice(int player_LED_choice) {
-  player_LED_seq[player_LED_seq_idx] = player_LED_choice;
-  player_LED_seq_idx++;
 }
 
 #define RESET_MSG_DELAY_MS 10000
@@ -437,7 +441,7 @@ void loop() {
 
     for (int i = 0; i < SEQ_LEN; i++) {
 
-      int game_seq_el = LEDs[random_LED_seq[i]];
+      int game_seq_el = LEDs[rand_LED_seq_idx[i]];
       int player_seq_el = player_LED_seq[i];
       Serial.println("G: " + String(game_seq_el) + " P: " + String(player_seq_el));
 
