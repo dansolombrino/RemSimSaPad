@@ -24,6 +24,7 @@
  * Joystick-LED coordination original code from: https://www.italiantechproject.it/tutorial-arduino/joystick
  * LCD without potentiometer original code from: https://www.instructables.com/Arduino-Interfacing-With-LCD-Without-Potentiometer/
  * LCD with    potentiometer original code from: https://techzeero.com/arduino-tutorials/display-potentiometer-readings-on-lcd-display/ 
+ * Game reset from code      original code from: https://www.instructables.com/two-ways-to-reset-arduino-in-software/
  **/
 
 /* Date of creation: 08/12/2023 */
@@ -75,6 +76,33 @@ int player_LED_seq_idx = 0;
 /* Message to show when the player loses */
 #define GAME_WINS_TOP_MSG "Game wins! :("
 #define GAME_WINS_BOTTOM_MSG " "
+
+#define RESET_GAME_MSG_DELAY_MS 10000
+#define RESET_GAME_TOP_MSG "Resetting game"
+#define RESET_GAME_BOTTOM_MSG "Please wait..."
+
+/**
+ * Function to reset the Arduino from software, rather than pressing the button on the board
+ * 
+ * It works by setting the Arduino code line address to zero, 
+ * effectively making Arduino start producing code from the start.
+ * */ 
+void(* reset) (void) = 0;
+
+/**
+ * Function to reset the game
+ */
+void reset_game() {
+
+  /* Inform player that the game will be reset */
+  print_msg_LCD(RESET_GAME_TOP_MSG, RESET_GAME_BOTTOM_MSG);
+
+  /* Wait a little bit, so as the user can read the reset message */
+  delay(RESET_GAME_MSG_DELAY_MS); 
+  
+  /* Reset Arduino */
+  reset();
+}
 
 
 // --- END game constants --- //
@@ -345,13 +373,6 @@ int get_ir_remote_button_value() {
 
 // --- ### --- //
 
-#define RESET_MSG_DELAY_MS 10000
-
-void(* resetFunc) (void) = 0; //declare reset function @ address 0
-
-void reset_game() {
-
-}
 
 // --- BEGIN Arduino definitions --- //
 
@@ -397,7 +418,7 @@ void loop() {
     int button = !digitalRead(JOYSTICK_BUTTON);
 
     if (button) {
-      resetFunc();
+      reset_game();
     }
 
     // input mode is infrared remote
@@ -445,14 +466,7 @@ void loop() {
         
         case KEY_POWER:
 
-          lcd.setCursor(0, 0);
-          lcd.print("Resetting...");
-          lcd.setCursor(0, 1);
-          lcd.print("        ");
-
-          delay(RESET_MSG_DELAY_MS); 
-
-          resetFunc();
+          reset_game();
 
           break;
       }
@@ -520,32 +534,15 @@ void loop() {
         delay(100);
 
         if (IrReceiver.decode()) {
-
-          // store the raw data received from the infrared remote, for debug purposes
-          int ir_remote_button_value = IrReceiver.decodedIRData.decodedRawData;
-          
-          // store the actual command received from the infrared receiver
-          int ir_command = IrReceiver.decodedIRData.command;
-
-          IrReceiver.resume(); // Enable receiving of the next value
-
-          if (ir_command == KEY_POWER) {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("Resetting...");
-            lcd.setCursor(0, 1);
-            lcd.print("        ");
-
-            delay(RESET_MSG_DELAY_MS); 
-
-            resetFunc();
+          if (get_ir_remote_button_value() == KEY_POWER) {
+            reset_game();
           }
 
 
         }
       }
 
-      resetFunc();
+      reset_game();
 
     } 
     else {
@@ -559,23 +556,8 @@ void loop() {
         delay(250);
 
         if (IrReceiver.decode()) {
-
-          // store the raw data received from the infrared remote, for debug purposes
-          int ir_remote_button_value = IrReceiver.decodedIRData.decodedRawData;
-          
-          // store the actual command received from the infrared receiver
-          int ir_command = IrReceiver.decodedIRData.command;
-
-          IrReceiver.resume(); // Enable receiving of the next value
-
-          if (ir_command == KEY_POWER) {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("Resetting...");
-            lcd.setCursor(0, 1);
-            lcd.print("        ");
-            delay(RESET_MSG_DELAY_MS); 
-            resetFunc();
+          if (get_ir_remote_button_value() == KEY_POWER) {
+            reset_game();
           }
         }
       }
