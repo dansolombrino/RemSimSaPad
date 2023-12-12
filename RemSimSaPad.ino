@@ -77,7 +77,7 @@ int player_LED_seq_idx = 0;
 #define GAME_WINS_TOP_MSG "Game wins! :("
 #define GAME_WINS_BOTTOM_MSG " "
 
-#define RESET_GAME_MSG_DELAY_MS 10000
+#define RESET_GAME_MSG_DELAY_MS 3000
 #define RESET_GAME_TOP_MSG "Resetting game"
 #define RESET_GAME_BOTTOM_MSG "Please wait..."
 
@@ -136,6 +136,9 @@ void communicate_game_result(
   String RESULT_TOP_MSG, String RESULT_BOTTOM_MSG,
   int led_to_blink, int blink_delay_ms
 );
+
+/* Milliseconds to wait between Arduino loop iterations */
+#define GAME_LOOP_DELAY_MS 500
 
 
 // --- END game definitions --- //
@@ -454,119 +457,198 @@ void setup() {
 
 }
 
+/**
+ * Main method, executed for as long as Arduino is powered on
+ * 
+ * Stores the main logic of the game, which can be summarized as:
+ *  - Read inputs
+ *  - Check whether player LED sequence is the same as the one shown by the game
+ *  - Inform player about result
+ *  - Restart the game
+*/
 void loop() {
 
-  // if the index is smaller than the sequence length
-  // then we have to capture the input, because they player has not competed the game yet
+  /**
+   * If the number of sequence elements input by the user is smaller than the game sequence length
+   */ 
   if (player_LED_seq_idx < SEQ_LEN) {
 
-    // read X, Y and pressure coordinates from the Joystick
+    /* Then, we have to capture the input, because they player has not competed the game yet */
+
+    /* read X, Y and pressure coordinates from the Joystick */ 
     int x = analogRead(JOYSTICK_X);
     int y = analogRead(JOYSTICK_Y);
     int button = !digitalRead(JOYSTICK_BUTTON);
 
+    /* If user has pressed the button in the joystick*/
     if (button) {
+
+      /* Then reset the game */
       reset_game();
     }
 
-    // input mode is infrared remote
+    /* If the remote infrared controller has sent some data */
     if (IrReceiver.decode()) {
 
+      /* Then we use the remote as input method */
+
+      /* Store the command that has been sent by the remote infrared command */
       int ir_command = get_ir_remote_button_value();
 
+      /* Decides what action to take, according to the received command from the remote infrared command */
       switch (ir_command) {
-
+        
+        /* If "rewind back" or "4" button has been pressed on the remote */
         case REWIND_BACK:
         case KEY_4:
 
+          /* Then the player selected the blue LED */
+
+          /* So, we store the choice... */
           store_player_LED_choice(LED_BLUE);
 
+          /* ... and we make the LED blink to acknowledge player choice  */
           blink_LED(LED_BLUE, LED_BLINK_TIME_MS);
 
           break;
 
+        /* If "volume up" or "2" button has been pressed on the remote */
         case VOL_PLUS:
         case KEY_2:
 
+          /* Then the player selected the red LED */
+
+          /* So, we store the choice... */
           store_player_LED_choice(LED_RED);
 
+          /* ... and we make the LED blink to acknowledge player choice  */
           blink_LED(LED_RED, LED_BLINK_TIME_MS);
 
           break;
 
+        /* If "forward" or "6" button has been pressed on the remote */
         case FORWARD:
         case KEY_6:
 
+          /* Then the player selected the red LED */
+
+          /* So, we store the choice... */
           store_player_LED_choice(LED_YELLOW);
 
+          /* ... and we make the LED blink to acknowledge player choice  */
           blink_LED(LED_YELLOW, LED_BLINK_TIME_MS);
 
           break;
 
+        /* If "volume down" or "8" button has been pressed on the remote */
         case VOL_MINUS:
         case KEY_8:
-          
+
+          /* Then the player selected the red LED */
+
+          /* So, we store the choice... */
           store_player_LED_choice(LED_GREEN);
 
+          /* ... and we make the LED blink to acknowledge player choice  */
           blink_LED(LED_GREEN, LED_BLINK_TIME_MS);
 
           break;
         
+        /* If "on/off" button has been pressed on the remote */
         case KEY_POWER:
 
+          /* Then the player wants to reset the game */
           reset_game();
 
           break;
       }
     }
 
-    // input mode is joystick
+    /* Otherwise, if the Joystick is NOT in its default position */
     else if (!(x > 505 && x < 520 && y > 505 && y < 520)) {
-
+      
+      /* Print joystick X, Y and button data to Serial interface for debug purposes */
       Serial.print("X: " + String(x));
       Serial.print(",\tY:" + String(y));
       Serial.println(",\tP: " + String(button));
 
-      if (x == 515 && y == 1023) {
-        store_player_LED_choice(LED_BLUE);
+      /* Decides what action to take, according to the position received from the joystick */
+      
+      /* If they joystick is pointed towards the left */
+      if (x > 500 && x < 520 && y > 1000) {
 
+        /* Then the player has chosen the blue LED*/
+
+        /* So, we store player choice... */
+        store_player_LED_choice(LED_BLUE);
+        
+        /* ... and we make the LED blink to acknowledge player choice */
         blink_LED(LED_BLUE, LED_BLINK_TIME_MS);
       }
 
-      if (x == 0 && y == 512) {
+      /* If they joystick is pointed towards the top */
+      if (x < 10 && y > 500 && y < 520) {
+
+        /* Then the player has chosen the red LED*/
+
+        /* So, we store player choice... */
         store_player_LED_choice(LED_RED);
 
+        /* ... and we make the LED blink to acknowledge player choice */
         blink_LED(LED_RED, LED_BLINK_TIME_MS);
       }
 
-      if (x == 1023 && y == 512) {
+      /* If they joystick is pointed towards the bottom */
+      if (x > 1000 && y > 500 && y < 520) {
+
+        /* Then the player has chosen the green LED*/
+
+        /* So, we store player choice... */
         store_player_LED_choice(LED_GREEN);
 
+        /* ... and we make the LED blink to acknowledge player choice */
         blink_LED(LED_GREEN, LED_BLINK_TIME_MS);
       }
 
-      if (x == 515 && y == 0) {
+      /* If they joystick is pointed towards the right */
+      if (x > 500 && x < 520 && y < 10) {
+
+        /* Then the player has chosen the yellow LED*/
+
+        /* So, we store player choice... */
         store_player_LED_choice(LED_YELLOW);
 
+        /* ... and we make the LED blink to acknowledge player choice */
         blink_LED(LED_YELLOW, LED_BLINK_TIME_MS);
       }
+
+      /**
+       * If the joystick is any other position, we ignore it and pass to the next loop iteration
+       * Until finally they user either uses the remote or properly positions the joystick
+      */
     }
+
+    /**
+     * If none of the cases get triggered, it means that the user did not input anything
+     * So, we simply skip ahead to the next loop iteration
+     * */
   } 
   
-  // otherwise, if the index is greater or equal to sequence length
-  // then the player has made all his moves, so we have to check whether they were correct or not!
+  /**
+   * If the number of sequence elements input by the user is greater than the game sequence length
+   */ 
   else {
 
+    /* then the player has made all his moves, so we have to check whether they were correct or not! */
     handle_game_result();
 
+    /* print empty lines to Serial interface for debug purposes*/
     Serial.println();
     Serial.println();
-
-
   }
 
-
-  delay(500);
+  /* Independently of whatever happened in the loop, wait some milliseconds before next iteration */
+  delay(GAME_LOOP_DELAY_MS);
 }
 
 
