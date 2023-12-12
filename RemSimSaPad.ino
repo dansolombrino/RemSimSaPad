@@ -1,6 +1,6 @@
 /* File name: RemSimSaPad.ino */ 
 
-/*
+/**
  * The program is inspired by the Simon Says game.
  *
  * 4 LEDs (red, green, blue and yellow) are placed in a cross-like shape on a surface.
@@ -15,16 +15,16 @@
  * 
  * Players can input the pattern using an infrared remote or a joystick.
  *Thanks to these two input modalities, the game can be played in single- or multi-player modes both!
- */
+ **/
 
-/*
+/**
  * Name of the authors: Daniele Solombrino, 1743111, solombrino.1743111@studenti.uniroma1.it
  * 
  * Some parts of the code have reworked from open source blogs.
  * Joystick-LED coordination original code from: https://www.italiantechproject.it/tutorial-arduino/joystick
  * LCD without potentiometer original code from: https://www.instructables.com/Arduino-Interfacing-With-LCD-Without-Potentiometer/
  * LCD with    potentiometer original code from: https://techzeero.com/arduino-tutorials/display-potentiometer-readings-on-lcd-display/ 
- */
+ **/
 
 /* Date of creation: 08/12/2023 */
 
@@ -33,25 +33,27 @@
 // --- BEGIN game constants --- //
 
 
-// How many elements should the player memorize
+/* How many elements should the player memorize */ 
 # define SEQ_LEN 3
 
-// Stores the random sequence of LEDs that the player is supposed to memorize
-// In the LEDs array defined before, each element of the array stores the Arduino PWM pin
-// responsible for lighting the LED up
-// So, by randomly putting indexes of that LEDs array in this array, we are effectively
-// creating a random sequence of the LEDs
-// Looping over this array and using it to index the LEDs array, we can then actually 
-// light the random sequence
+/**
+ * Stores the random sequence of LEDs that the player is supposed to memorize
+ * In the LEDs array defined before, each element of the array stores the Arduino PWM pin
+ * responsible for lighting the LED up
+ * So, by randomly putting indexes of that LEDs array in this array, we are effectively
+ * creating a random sequence of the LEDs
+ * Looping over this array and using it to index the LEDs array, we can then actually 
+ * light the random sequence
+ **/ 
 int rand_LED_seq_idx[SEQ_LEN];
 
-// The delay between one LED of the sequence and the following one
+/* The delay between one LED of the sequence and the following one */
 # define LED_SEQ_DELAY_MS 1000
 
-// Stores player's sequence of LEDs
+/* Stores player's sequence of LEDs */
 int player_LED_seq[SEQ_LEN];
 
-// Indexes player's sequence of LEDs
+/* Indexes player's sequence of LEDs */
 int player_LED_seq_idx = 0;
 
 
@@ -64,13 +66,13 @@ int player_LED_seq_idx = 0;
 // --- BEGIN Joystick definitions --- //
 
 
-// Joystick X axis data is read through Arduino board Analog A0 pin
+/* Joystick X axis data is read through Arduino board Analog A0 pin */
 #define JOYSTICK_X A0
 
-// Joystick Y axis data is read through Arduino board Analog A1 pin
+/* Joystick Y axis data is read through Arduino board Analog A1 pin */
 #define JOYSTICK_Y A1
 
-// Joystick press data is read through Arduino board Analog A2 pin
+/* Joystick press data is read through Arduino board Analog A2 pin */
 #define JOYSTICK_BUTTON A2
 
 
@@ -83,30 +85,36 @@ int player_LED_seq_idx = 0;
 // --- BEGIN LEDs definitions --- //
 
 
-// Red LED is on Arduino board PWM pin 3
+/* Red LED is on Arduino board PWM pin 3 */
 #define LED_RED 3
 
-// Blue LED is on Arduino board PWM pin 4
+/* Blue LED is on Arduino board PWM pin 4 */
 #define LED_BLUE 4
 
-// Green LED is on Arduino board PWM pin 6
+/* Green LED is on Arduino board PWM pin 6 */
 #define LED_GREEN 6
 
-// Yellow LED is on Arduino board PWM pin 7
+/* Yellow LED is on Arduino board PWM pin 7 */
 #define LED_YELLOW 7
 
-// Number of LEDs
+/* Number of LEDs */
 #define NUM_LEDS 4
 
-// Place LEDs pins in an array to be used to generate the random LED sequence later on
+/**
+ * Store LEDs in an array.
+ * This way, if we generate a random sequence of numbers in [0, NUM_LEDS)
+ * we can effectively have a random sequence of LEDs!
+ * */ 
 int LEDs[] = {LED_RED, LED_BLUE, LED_GREEN, LED_YELLOW};
 
-// Time (in milliseconds) to keep the LED on, when blinking it
+/* Time (in milliseconds) to keep the LED on, when blinking it */
 #define LED_BLINK_TIME_MS 500 
 
-// Setup method to configure Arduino board pins 3, 4, 5, 6 and 7 as output pins.
-// These pins need to be set to output because they are controlled by the code
-// since they have to be turned on or off according to the game
+/**
+ * Setup method to configure Arduino board pins 3, 4, 6 and 7 as output pins.
+ * This is needed to control them via code, since they are responsible for 
+ * turning LEDs on or off
+ * */
 void setup_LEDs_board_pins() {
   // Red LED
   pinMode(LED_RED, OUTPUT);
@@ -121,48 +129,79 @@ void setup_LEDs_board_pins() {
   pinMode(LED_GREEN, OUTPUT);
 }
 
-// Generates random LED sequence
+/**
+ * Generates random LED sequence.
+ * 
+ * Generating a random LED sequence really amounts to generating a random sequence
+ * of indexes for the LEDs array.
+ **/
 void generate_rand_LED_sequence() {
-  // Seed the random number generator with an analog pin value
+  
+  /* Seed the random number generator with an analog pin value */
   randomSeed(analogRead(A0));
 
+  /* Print debug message to Serial interface to have an idea where we currenly are in the execution */
   Serial.println("Random LEDs");
 
-  // LEDs are stored in the LEDs array
-  // So, if we generate a random sequence of numbers going from 0 to (NUM_LEDS - 1)
-  // we can use these numbers to randomly index the LEDs array
-  // effectively creating a random sequence of LEDs
+  /**
+   * LEDs are stored in the LEDs array
+   * So, if we generate a random sequence of numbers in [0, NUM_LEDS)
+   * we can use these numbers to randomly index the LEDs array
+   * effectively creating a random sequence of LEDs
+   * */
   for (int i = 0; i < SEQ_LEN; i++) {
     rand_LED_seq_idx[i] = random(NUM_LEDS);
 
+    /* Print generated random index to Serial interface */
     Serial.println(rand_LED_seq_idx[i]);
   }
 }
 
+/**
+ * Plays a randomly-generated LED sequence
+*/
 int play_LED_sequence() {
 
   generate_rand_LED_sequence(); 
 
-  // Light the random LED sequence up
+  /* Light the random LED sequence up */
   for (int i = 0; i < SEQ_LEN; i++) {
 
     blink_LED(LEDs[rand_LED_seq_idx[i]], LED_SEQ_DELAY_MS);
 
+    /* Delay the blink of next LED a little bit to allow player to memorize current LED */
     delay(LED_SEQ_DELAY_MS);
   } 
 
 }
 
-void blink_LED(int LED_board_pin, int blink_time) {
+/**
+ * Blinks a given LED
+ * 
+ * Parameters:
+ * int LED_board_pin --> Arduino board pin the LED to blink is connected to
+ * int blink_time_ms --> milliseconds to keep the LED on, when blinking it
+ * */
+void blink_LED(int LED_board_pin, int blink_time_ms) {
   digitalWrite(LED_board_pin, true);
 
-  delay(blink_time);
+  delay(blink_time_ms);
 
   digitalWrite(LED_board_pin, false);
 }
 
+/**
+ * Stores player LED choice, when the original random sequence has to be reproduced
+ * 
+ * Parameters:
+ * int player_LED_choice --> what LED did the player choose
+*/
 void store_player_LED_choice(int player_LED_choice) {
+
+  /* Storing player choice at the current sequence index */
   player_LED_seq[player_LED_seq_idx] = player_LED_choice;
+
+  /* Moving on to the next sequence index */
   player_LED_seq_idx++;
 }
 
