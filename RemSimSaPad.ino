@@ -289,6 +289,7 @@ void print_msg_LCD(String top_row_msg, String bottom_row_msg) {
 
 // --- BEGIN Infrared remote controller definitions --- //
 
+
 #include <IRremote.h>
 
 /* Arduino board PWM pin used to receive data from the infrared remote controller */
@@ -337,6 +338,7 @@ int get_ir_remote_button_value() {
 
   return ir_command;
 }
+
 
 // --- END Infrared remote controller definitions --- //
 
