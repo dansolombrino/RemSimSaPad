@@ -287,40 +287,58 @@ void print_msg_LCD(String top_row_msg, String bottom_row_msg) {
 // --- ### --- //
 
 
-// --- Remote constants --- //
+// --- BEGIN Infrared remote controller definitions --- //
 
 #include <IRremote.h>
 
-// Arduino board PWM pin used to receive data from the remote controller
+/* Arduino board PWM pin used to receive data from the infrared remote controller */
 #define IR_REMOTE A3
 
-// --- Remote constants --- //
+/* Infrared remote controlled button values --> remote button mappings */
 
-
-// --- ### --- //
-
-
-// Storing remote values --> remote button mappings
-
-// Blue LED (left LED) can be turned on using either the rewind back or 4 number in the remote
+/* Blue LED (left LED) can be turned on using either the rewind back or 4 number in the remote */
 #define REWIND_BACK 0x44
 #define KEY_4 0x8
 
-// Red LED (top LED) can be turned on using either the vol + or 2 number in the remote
+/* Red LED (top LED) can be turned on using either the vol + or 2 number in the remote */
 #define VOL_PLUS 0x46
 #define KEY_2 0x18
 
-// Yellow LED (right LED) can be turned on using either the vol + or 2 number in the remote
+/* Yellow LED (right LED) can be turned on using either the vol + or 2 number in the remote */
 #define FORWARD 0x43
 #define KEY_6 0x5A
 
-// Green LED (bottom LED) can be turned on using either the vol + or 2 number in the remote
+/* Green LED (bottom LED) can be turned on using either the vol + or 2 number in the remote */
 #define VOL_MINUS 0x15
 #define KEY_8 0x52
 
+/* Game can be reset by pressing the power buttom on the remote*/
 #define KEY_POWER 0x45
 
-// --- Remote constants --- //
+/* Gets command from the remote infrared controller */
+int get_ir_remote_button_value() {
+  
+  /**
+   * Stores the command received from the infrared remote control .
+   * 
+   * command attribute is a hexadecimal value that uniquely identifies the 
+   * button that has been pressed on the remote
+   * */ 
+  int ir_command = IrReceiver.decodedIRData.command;
+
+  /* Print raw data from the infrared remote to the Serial interface for debug purposes */
+  Serial.println(IrReceiver.decodedIRData.decodedRawData, HEX); 
+  IrReceiver.printIRResultShort(&Serial); 
+  Serial.println();
+  Serial.println();
+
+  /* Set the infrared receiver to receive next value that gets pressed in the remote */
+  IrReceiver.resume();
+
+  return ir_command;
+}
+
+// --- END Infrared remote controller definitions --- //
 
 
 // --- ### --- //
@@ -383,20 +401,7 @@ void loop() {
     // input mode is infrared remote
     if (IrReceiver.decode()) {
 
-      // store the raw data received from the infrared remote, for debug purposes
-      int ir_remote_button_value = IrReceiver.decodedIRData.decodedRawData;
-      
-      // store the actual command received from the infrared receiver
-      int ir_command = IrReceiver.decodedIRData.command;
-
-      // printing raw data received from the infrared remote, for debug purposes
-      Serial.println(ir_remote_button_value, HEX); 
-      IrReceiver.printIRResultShort(&Serial); 
-
-      Serial.println();
-      Serial.println();
-
-      IrReceiver.resume(); // Enable receiving of the next value
+      int ir_command = get_ir_remote_button_value();
 
       switch (ir_command) {
 
