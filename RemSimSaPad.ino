@@ -31,7 +31,7 @@
 
 
 
-// --- BEGIN game constants --- //
+// --- BEGIN game definitions --- //
 
 
 /* How many elements should the player memorize */ 
@@ -104,8 +104,41 @@ void reset_game() {
   reset();
 }
 
+/**
+ * Handles game result communication
+ * 
+ * Checks whether player and game LED sequences match and communicate the appropriate result accordingly.
+ * 
+ * See actual implementation at the bottom of the file.
+ * */
+void handle_game_result();
 
-// --- END game constants --- //
+/**
+ * Returns true if the player and game LED sequences match, false otherwise 
+ * 
+ * See actual implementation at the bottom of the file.
+ * */
+bool game_player_seqs_match();
+
+/* Number of times to blink the LED to communicate game result */
+#define GAME_RESULT_NUM_LED_BLINKS 1000
+
+/* The delay between blinks of LED, when communicating game result */
+#define GAME_RESULT_LED_SEQ_DELAY_MS 100
+
+/**
+ * Communicates game result to the player, by means of 
+ * flashing a LED (green in case of victory, red otherwise) and printing a message to the LCD screen.
+ * 
+ * See actual implementation at the bottom of the file.
+ * */
+void communicate_game_result(
+  String RESULT_TOP_MSG, String RESULT_BOTTOM_MSG,
+  int led_to_blink, int blink_delay_ms
+);
+
+
+// --- END game definitions --- //
 
 
 // --- ### --- //
@@ -509,59 +542,7 @@ void loop() {
   // then the player has made all his moves, so we have to check whether they were correct or not!
   else {
 
-    int game_and_player_match = true;
-
-    for (int i = 0; i < SEQ_LEN; i++) {
-
-      int game_seq_el = LEDs[rand_LED_seq_idx[i]];
-      int player_seq_el = player_LED_seq[i];
-      Serial.println("G: " + String(game_seq_el) + " P: " + String(player_seq_el));
-
-      if (game_seq_el != player_seq_el) {
-        game_and_player_match = false;
-      }
-
-    }
-
-    if (game_and_player_match) {
-      Serial.println("PLAYER WINNER!");
-
-      print_msg_LCD(PLAYER_WINS_TOP_MSG, PLAYER_WINS_BOTTOM_MSG);
-
-      for (int i = 0; i < 1000; i++) {
-        blink_LED(LED_GREEN, 100);
-
-        delay(100);
-
-        if (IrReceiver.decode()) {
-          if (get_ir_remote_button_value() == KEY_POWER) {
-            reset_game();
-          }
-
-
-        }
-      }
-
-      reset_game();
-
-    } 
-    else {
-      Serial.println("Game winner :(");
-
-      print_msg_LCD(GAME_WINS_TOP_MSG, GAME_WINS_BOTTOM_MSG);
-
-      for (int i = 0; i < 1000; i++) {
-        blink_LED(LED_RED, 100);
-
-        delay(250);
-
-        if (IrReceiver.decode()) {
-          if (get_ir_remote_button_value() == KEY_POWER) {
-            reset_game();
-          }
-        }
-      }
-    }
+    handle_game_result();
 
     Serial.println();
     Serial.println();
@@ -577,3 +558,104 @@ void loop() {
 
 
 // --- ### --- //
+
+/**
+ * Actual implementation of the game_player_seqs_match method
+ * 
+ * See method signature at the beginning of the file for more details
+*/
+bool game_player_seqs_match() {
+  
+  /* Stores whether the game and player LED sequence match */
+  bool game_player_seqs_match = true;
+
+  /* Looping over the game and player LED sequences */
+  for (int i = 0; i < SEQ_LEN; i++) {
+
+    /**
+     * Get the i-th LED from the randomly generated LED sequence.
+     * 
+     * Rememeber, we have to use the double indexing to access the actual LED value
+     * */
+    int game_seq_el = LEDs[rand_LED_seq_idx[i]];
+
+    /* Get the i-th LED from the player */
+    int player_seq_el = player_LED_seq[i];
+    
+    /* Print game vs. player i-th LED element for debug purposes to the Serial interface */
+    Serial.println("G: " + String(game_seq_el) + " P: " + String(player_seq_el));
+
+    /* If i-th game LED is different than the one picked by the player */
+    if (game_seq_el != player_seq_el) {
+      /* Then signal that there has been a mismatch */
+      game_player_seqs_match = false;
+    }
+    /**
+     * Otherwise, game_player_seqs_match remains unchanged to true,
+     * meaning that no mismatch has happened (i.e. the sequences are the same!)
+     * */
+
+  }
+
+  return game_player_seqs_match;
+}
+
+/**
+ * Actual implementation of the communicate_game_result method
+ * 
+ * See method signature at the beginning of the file for more details
+*/
+void communicate_game_result(
+  String RESULT_TOP_MSG, String RESULT_BOTTOM_MSG,
+  int led_to_blink, int blink_delay_ms
+) {
+
+  Serial.println(RESULT_TOP_MSG + RESULT_BOTTOM_MSG);
+
+  print_msg_LCD(RESULT_TOP_MSG, RESULT_BOTTOM_MSG);
+
+  for (int i = 0; i < GAME_RESULT_NUM_LED_BLINKS; i++) {
+    blink_LED(led_to_blink, blink_delay_ms);
+
+    delay(blink_delay_ms);
+
+    if (IrReceiver.decode()) {
+      if (get_ir_remote_button_value() == KEY_POWER) {
+        reset_game();
+      }
+    }
+
+    if (!digitalRead(JOYSTICK_BUTTON)) {
+      reset_game();
+    }
+  }
+
+  reset_game();
+}
+
+/**
+ * Actual implementation of the handle_game_result method
+ * 
+ * See method signature at the beginning of the file for more details
+*/
+void handle_game_result() {
+  
+  /* If the game and player LED sequences match */
+  if (game_player_seqs_match()) {
+    
+    /* Then communicate victory! :) */
+    communicate_game_result(
+      PLAYER_WINS_TOP_MSG, PLAYER_WINS_BOTTOM_MSG, 
+      LED_GREEN, GAME_RESULT_LED_SEQ_DELAY_MS
+    );
+  } 
+  /* If game and player LED sequences do NOT match*/
+  else 
+  {
+    /* Then communicate defeat :( */
+    communicate_game_result(
+      GAME_WINS_TOP_MSG, GAME_WINS_BOTTOM_MSG, 
+      LED_RED, GAME_RESULT_LED_SEQ_DELAY_MS
+    );
+  }
+}
