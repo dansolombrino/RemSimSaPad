@@ -56,6 +56,26 @@ int player_LED_seq[SEQ_LEN];
 /* Indexes player's sequence of LEDs */
 int player_LED_seq_idx = 0;
 
+/* Message to show when the system is initializing the game */
+#define INIT_GAME_TOP_MSG "Init game..."
+#define INIT_GAME_BOTTOM_MSG "Please wait :)"
+
+/* Message to show when the player is supposed to look at the sequence to memorize */
+#define LOOK_AT_SEQ_TOP_MSG "Look at the"
+#define LOOK_AT_SEQ_BOTTOM_MSG "sequence :)"
+
+/* Message to show when the player is supposed to reproduce the sequence */
+#define REP_SEQ_TOP_MSG "Reproduce the"
+#define REP_SEQ_BOTTOM_MSG "sequence :)"
+
+/* Message to show when the player wins */
+#define PLAYER_WINS_TOP_MSG "Player wins! :)"
+#define PLAYER_WINS_BOTTOM_MSG " "
+
+/* Message to show when the player loses */
+#define GAME_WINS_TOP_MSG "Game wins! :("
+#define GAME_WINS_BOTTOM_MSG " "
+
 
 // --- END game constants --- //
 
@@ -210,32 +230,56 @@ void store_player_LED_choice(int player_LED_choice) {
 // --- ### --- ///
 
 
-// --- BEGIN LCD constants --- //
+// --- BEGIN LCD definitions --- //
 
-// Loading LCD library
+
+/* Load LCD library */
 #include <LiquidCrystal.h> 
 
-// Setting LCD contrast value
+/* Stores LCD contrast value */
 # define LCD_CONTRAST 50
 
-// RS LCD pin is connected to Arduino board PWM pin 13
+/* Store LCD pin --> Arduino PWM pin mappings */
 # define RS 13
-
-// E LCD pin is connected to Arduino board PWM pin 5
 # define E 5
-
-// D4, D5, D6 and D7 LCD pins are connected to Arduino board PWM pin 11, 10, 9, 8
 # define D4 11
 # define D5 10
 # define D6 9
 # define D7 8
-
-// V0 LCD pin is connected to Arduino board PWM pin 12
 # define V0 12
 
-// Instantiating LCD controlled object.
-// 4-data pin control mode is used
+/* Init LCD controller object, using 4-data pin control mode */
 LiquidCrystal lcd(RS, E, D4, D5, D6, D7);  
+
+/* Setup LCD screen */
+void setup_LCD() {
+  analogWrite(V0, LCD_CONTRAST);
+  lcd.begin(16, 2);
+}
+
+/**
+ * Prints a message in the LCD screen
+ * 
+ * Parameters:
+ * String top_row_msg --> String containing the msg to display in LCD top row
+ * String bottom_row_msg --> String containing the msg to display in LCD bottom row
+*/
+void print_msg_LCD(String top_row_msg, String bottom_row_msg) {
+  
+  /* Clean LCD display from previous messages */
+  lcd.clear();
+  
+  /* Set LCD cursor at the start of the top row */
+  lcd.setCursor(0, 0);
+  /* Write top_row_msg to LCD top row */
+  lcd.print(top_row_msg);
+
+  /* Set LCD cursor at the start of the bottom row */
+  lcd.setCursor(0, 1);
+  /* Write top_row_msg to LCD bottom row */
+  lcd.print(bottom_row_msg);
+}
+
 
 // --- END LCD constants --- //
 
@@ -281,14 +325,6 @@ LiquidCrystal lcd(RS, E, D4, D5, D6, D7);
 
 // --- ### --- //
 
-
-// Setup method for the LCD screen
-void setup_LCD() {
-  
-  analogWrite(V0, LCD_CONTRAST);
-  lcd.begin(16, 2);
-}
-
 #define RESET_MSG_DELAY_MS 10000
 
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
@@ -312,15 +348,7 @@ void setup() {
   // Setting LCD parameters. See method comments for more details!
   setup_LCD();
 
-  // Printing "initialization in progress" message
-  // Since the message is too long (> 16 characters), we split it in two rows
-  // So, we set the printing cursor to the top row...
-  lcd.setCursor(0, 0);
-  // ... and we print the message
-  lcd.print("Init game...");
-  // And we repeat the same for the bottom row
-  lcd.setCursor(0, 1);
-  lcd.print("Please wait :)");
+  print_msg_LCD(INIT_GAME_TOP_MSG, INIT_GAME_BOTTOM_MSG);
   
   // Setting LEDs Arduino board pins to output mode. See method comments for more details!
   setup_LEDs_board_pins();
@@ -328,29 +356,15 @@ void setup() {
   // Set the pin mode for the Joystick press button to "pull up" mode
   pinMode(JOYSTICK_BUTTON, INPUT_PULLUP);
 
-  // After finishing setting the internal parameters up, we clear the LCD display...
-  lcd.clear();
-  // ... and we show a message telling the player to memorize the sequence.
-  // As per previous message, we use the same top row, bottom row trick, since the message is longer than 16 characters
-  lcd.setCursor(0, 0);
-  lcd.print("Look at the");
-  lcd.setCursor(0, 1);
-  lcd.print("sequence :)");
+  print_msg_LCD(LOOK_AT_SEQ_TOP_MSG, LOOK_AT_SEQ_BOTTOM_MSG);
 
   // Show the light sequence to the player
   play_LED_sequence();
 
-  // After finishing setting the internal parameters up, we clear the LCD display...
-  lcd.clear();
-  // ... and we show a message telling the player to memorize the sequence.
-  // As per previous message, we use the same top row, bottom row trick, since the message is longer than 16 characters
-  lcd.setCursor(0, 0);
-  lcd.print("Now reproduce");
-  lcd.setCursor(0, 1);
-  lcd.print("the sequence :)");
+  print_msg_LCD(REP_SEQ_TOP_MSG, REP_SEQ_BOTTOM_MSG);
 
 }
- 
+
 void loop() {
 
   // if the index is smaller than the sequence length
@@ -491,14 +505,7 @@ void loop() {
     if (game_and_player_match) {
       Serial.println("PLAYER WINNER!");
 
-      // After finishing setting the internal parameters up, we clear the LCD display...
-      lcd.clear();
-      // ... and we show a message telling the player to memorize the sequence.
-      // As per previous message, we use the same top row, bottom row trick, since the message is longer than 16 characters
-      lcd.setCursor(0, 0);
-      lcd.print("Player wins! :)");
-      lcd.setCursor(0, 1);
-      lcd.print("        ");
+      print_msg_LCD(PLAYER_WINS_TOP_MSG, PLAYER_WINS_BOTTOM_MSG);
 
       for (int i = 0; i < 1000; i++) {
         blink_LED(LED_GREEN, 100);
@@ -537,14 +544,7 @@ void loop() {
     else {
       Serial.println("Game winner :(");
 
-      // After finishing setting the internal parameters up, we clear the LCD display...
-      lcd.clear();
-      // ... and we show a message telling the player to memorize the sequence.
-      // As per previous message, we use the same top row, bottom row trick, since the message is longer than 16 characters
-      lcd.setCursor(0, 0);
-      lcd.print("Game wins! :(");
-      lcd.setCursor(0, 1);
-      lcd.print("        ");
+      print_msg_LCD(GAME_WINS_TOP_MSG, GAME_WINS_BOTTOM_MSG);
 
       for (int i = 0; i < 1000; i++) {
         blink_LED(LED_RED, 100);
