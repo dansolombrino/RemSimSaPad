@@ -409,32 +409,47 @@ int get_ir_remote_button_value() {
 
 // --- BEGIN Arduino definitions --- //
 
+
+/* Baud rate to monitor the Serial interface. Using default value */
 # define BAUD_RATE 9600
 
-// Setup method, it runs only once when the device gets turned on
+/**
+ * Setup method, which is ran only once at the beginning of the code.
+ * 
+ * Used to set:
+ *  - Serial interface monitoring
+ *  - Remote infrared controller
+ *  - LCD screen
+ *  - Joystick
+ *  - LEDs
+*/
 void setup() {
 
-  // Initialize serial communication with the Arduino board using the default Baud rate of 9600
+  /* Initialize serial communication with the Arduino board using the specified Baud rate */
   Serial.begin(BAUD_RATE);
 
+  /* Initialize remote infrared controller communication */
   IrReceiver.begin(IR_REMOTE);
 
-  // Setting LCD parameters. See method comments for more details!
+  /* Set LCD parameters. See method comments for more details! */
   setup_LCD();
 
+  /* Tell player that the game is getting initialized */
   print_msg_LCD(INIT_GAME_TOP_MSG, INIT_GAME_BOTTOM_MSG);
   
-  // Setting LEDs Arduino board pins to output mode. See method comments for more details!
+  /* Setting LEDs Arduino board pins to output mode. See method comments for more details! */
   setup_LEDs_board_pins();
 
-  // Set the pin mode for the Joystick press button to "pull up" mode
+  /* Set the pin mode for the Joystick press button to "pull up" mode */
   pinMode(JOYSTICK_BUTTON, INPUT_PULLUP);
 
+  /* Tell player to memorize the sequence that will be shown very soon */
   print_msg_LCD(LOOK_AT_SEQ_TOP_MSG, LOOK_AT_SEQ_BOTTOM_MSG);
 
   // Show the light sequence to the player
   play_LED_sequence();
 
+  /* Tell player to reproduce the sequence that has been shown */
   print_msg_LCD(REP_SEQ_TOP_MSG, REP_SEQ_BOTTOM_MSG);
 
 }
@@ -553,6 +568,7 @@ void loop() {
 
   delay(500);
 }
+
 
 // --- END Arduino definitions --- //
 
