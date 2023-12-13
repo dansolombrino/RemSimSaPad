@@ -33,9 +33,53 @@
 
 // --- BEGIN game definitions --- //
 
+/**
+ * Whether to use demo mode or not.
+ * 
+ * Demo mode on effects:
+ *  - sequence length fixed to 3 (rather than randomly picked in [3, 6])
+ *  - always the same sequence "top, right, left" (red, yellow, blue) gets picked
+ * 
+ * Demo mode off effects:
+ *  - sequence length is randomly picked in [3, 6]
+ *  - LED sequence is actually random and not fixed
+ * */
+#define DEMO_MODE true
+// #define DEMO_MODE false
+
+/* Minimum sequence length */
+#define SEQ_LEN_MIN 3
+
+/* Maximum sequence length */
+#define SEQ_LEN_MAX 6
+
+/**
+ * Generates a random sequence length. Its behaviour changes whether demo mode is on or off.
+ * 
+ * Demo mode on: sequence lengths is always 3
+ * Demo mode off: sequence length is randomly picked in [3, 6]
+*/
+int generate_rand_seq_len() {
+  
+  /* If demo mode is on*/
+  if (DEMO_MODE) {
+
+    /* Then sequence lengths is 3*/
+    return 3;
+  } 
+  /* Otherwise, if demo mode is off */
+  else {
+    
+    /* Seed the random number generator with the milliseconds elapsed since turning Arduino on*/
+    randomSeed(millis());
+
+    /* Return a random number in [SEQ_LEN_MIN, SEQ_LEN_MAX]*/
+    return random(SEQ_LEN_MIN, SEQ_LEN_MAX);
+  }
+}
 
 /* How many elements should the player memorize */ 
-# define SEQ_LEN 3
+int seq_len = generate_rand_seq_len();
 
 /**
  * Stores the random sequence of LEDs that the player is supposed to memorize
@@ -46,13 +90,13 @@
  * Looping over this array and using it to index the LEDs array, we can then actually 
  * light the random sequence
  **/ 
-int rand_LED_seq_idx[SEQ_LEN];
+int rand_LED_seq_idx[10];
 
 /* The delay between one LED of the sequence and the following one */
 # define LED_SEQ_DELAY_MS 1000
 
 /* Stores player's sequence of LEDs */
-int player_LED_seq[SEQ_LEN];
+int player_LED_seq[10];
 
 /* Indexes player's sequence of LEDs */
 int player_LED_seq_idx = 0;
@@ -218,11 +262,23 @@ void setup_LEDs_board_pins() {
  * 
  * Generating a random LED sequence really amounts to generating a random sequence
  * of indexes for the LEDs array.
+ * 
+ * Behaviour depends on demo mode being on or off.
+ * Demo mode on: sequence will always be "top, left, right" (red, yellow, blue)
+ * Demo mode off: sequence will actually be random.
+ * This is because in the two cases we use two different seeds.
+ * Demo mode on is sed using the value 0, while demo mode off is sed using the 
+ * milliseconds that have elapsed since Arduino board has been turned on
  **/
 void generate_rand_LED_sequence() {
   
-  /* Seed the random number generator with an analog pin value */
-  randomSeed(analogRead(A0));
+  /* Seed the random number generator */
+  if (DEMO_MODE) {
+    randomSeed(analogRead(0));
+  }
+  else {
+    randomSeed(millis());
+  }
 
   /* Print debug message to Serial interface to have an idea where we currenly are in the execution */
   Serial.println("Random LEDs");
@@ -233,7 +289,7 @@ void generate_rand_LED_sequence() {
    * we can use these numbers to randomly index the LEDs array
    * effectively creating a random sequence of LEDs
    * */
-  for (int i = 0; i < SEQ_LEN; i++) {
+  for (int i = 0; i < seq_len; i++) {
     rand_LED_seq_idx[i] = random(NUM_LEDS);
 
     /* Print generated random index to Serial interface */
@@ -247,7 +303,7 @@ int play_LED_sequence() {
   generate_rand_LED_sequence(); 
 
   /* Light the random LED sequence up */
-  for (int i = 0; i < SEQ_LEN; i++) {
+  for (int i = 0; i < seq_len; i++) {
 
     blink_LED(LEDs[rand_LED_seq_idx[i]], LED_SEQ_DELAY_MS);
 
@@ -471,7 +527,7 @@ void loop() {
   /**
    * If the number of sequence elements input by the user is smaller than the game sequence length
    */ 
-  if (player_LED_seq_idx < SEQ_LEN) {
+  if (player_LED_seq_idx < seq_len) {
 
     /* Then, we have to capture the input, because they player has not competed the game yet */
 
@@ -672,7 +728,7 @@ bool game_player_seqs_match() {
   bool game_player_seqs_match = true;
 
   /* Looping over the game and player LED sequences */
-  for (int i = 0; i < SEQ_LEN; i++) {
+  for (int i = 0; i < seq_len; i++) {
 
     /**
      * Get the i-th LED from the randomly generated LED sequence.
