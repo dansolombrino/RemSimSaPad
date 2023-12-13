@@ -77,7 +77,7 @@ int player_LED_seq_idx = 0;
 #define GAME_WINS_TOP_MSG "Game wins! :("
 #define GAME_WINS_BOTTOM_MSG " "
 
-#define RESET_GAME_MSG_DELAY_MS 3000
+#define RESET_GAME_MSG_DELAY_MS 2500
 #define RESET_GAME_TOP_MSG "Resetting game"
 #define RESET_GAME_BOTTOM_MSG "Please wait..."
 
